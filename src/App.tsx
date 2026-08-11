@@ -2,6 +2,7 @@ import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { WelcomeOnboarding } from './components/WelcomeOnboarding';
 import { TelegramHeader } from './components/TelegramHeader';
+import { AdminPanelModal } from './components/admin/AdminPanelModal';
 import { BottomNav } from './components/BottomNav';
 import { NotificationToast } from './components/NotificationToast';
 import { MissionsView } from './components/views/MissionsView';
@@ -14,7 +15,7 @@ import { DailyRewardModal } from './components/modals/DailyRewardModal';
 import { BlockedUserView } from './components/BlockedUserView';
 
 const AppContent: React.FC = () => {
-  const { showOnboarding, activeTab, isBlocked } = useApp();
+  const { showOnboarding, activeTab, isBlocked, showAdminPanel } = useApp();
 
   if (isBlocked) {
     return (
@@ -53,7 +54,7 @@ const AppContent: React.FC = () => {
       <WhitepaperModal />
       <HistoryModal />
       <DailyRewardModal />
-      {/* Admin panel is standalone web only: open /admin in browser */}
+      {showAdminPanel && <AdminPanelModal />}
     </div>
   );
 };

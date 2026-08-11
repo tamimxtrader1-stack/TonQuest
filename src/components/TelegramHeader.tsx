@@ -3,7 +3,7 @@ import { FileText, History, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const TelegramHeader: React.FC = () => {
-  const { user, settings, setShowWhitepaper, setShowHistory } = useApp();
+  const { user, settings, setShowWhitepaper, setShowHistory, setShowAdminPanel } = useApp();
 
   return (
     <header className="sticky top-0 z-40 bg-[#38B6FF] px-4 pt-3 pb-2 border-b-2 border-black shadow-[0px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -16,7 +16,6 @@ export const TelegramHeader: React.FC = () => {
               alt={user.telegramName}
               className="w-8 h-8 rounded-full border-2 border-black object-cover bg-yellow-200"
               onError={(e) => {
-                // Fallback avatar if photo_url breaks or is blocked
                 (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.telegramId}`;
               }}
             />
@@ -60,7 +59,15 @@ export const TelegramHeader: React.FC = () => {
             <History className="w-4 h-4 text-purple-600" />
           </button>
 
-          {/* Admin panel moved to standalone web: /admin — not shown inside Mini App */}
+          {user.isAdmin && (
+            <button
+              onClick={() => setShowAdminPanel(true)}
+              className="p-2 bg-[#FFDE59] hover:bg-yellow-300 text-black rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] active:translate-y-0.5 active:shadow-none transition-all"
+              title="Admin Panel"
+            >
+              <span className="text-xs font-black">ADMIN</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
