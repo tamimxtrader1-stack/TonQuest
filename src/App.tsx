@@ -11,7 +11,6 @@ import { LeaderboardView } from './components/views/LeaderboardView';
 import { WhitepaperModal } from './components/modals/WhitepaperModal';
 import { HistoryModal } from './components/modals/HistoryModal';
 import { DailyRewardModal } from './components/modals/DailyRewardModal';
-import { AdminPanelModal } from './components/admin/AdminPanelModal';
 import { BlockedUserView } from './components/BlockedUserView';
 
 const AppContent: React.FC = () => {
@@ -54,7 +53,7 @@ const AppContent: React.FC = () => {
       <WhitepaperModal />
       <HistoryModal />
       <DailyRewardModal />
-      <AdminPanelModal />
+      {/* Admin panel is standalone web only: open /admin in browser */}
     </div>
   );
 };
