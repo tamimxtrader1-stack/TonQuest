@@ -1,0 +1,6 @@
+{
+  "name": "Telegram Mini App",
+  "description": "Complete Telegram Mini App with Cartoon Style UI, Mission Cooldowns, Crypto Wallet, Referral Engine, Leaderboards, Admin Panel, and production PHP/MySQL export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

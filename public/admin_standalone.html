@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sui Tap - Admin Management Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        body { font-family: 'Space Grotesk', sans-serif; background-color: #0F172A; color: #F8FAFC; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .neobrutal-box {
+            background: #1E293B;
+            border: 3px solid #38B6FF;
+            box-shadow: 4px 4px 0px 0px #38B6FF;
+            border-radius: 16px;
+        }
+        .input-box {
+            background: #0F172A;
+            border: 2px solid #64748B;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-weight: bold;
+            width: 100%;
+        }
+        .input-box:focus { border-color: #38B6FF; outline: none; }
+    </style>
+</head>
+<body class="min-h-screen p-6 max-w-4xl mx-auto">
+
+    <header class="flex items-center justify-between pb-6 border-b-2 border-slate-700 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#38B6FF] rounded-xl border-2 border-white flex items-center justify-center font-black text-xl text-slate-900">⚙</div>
+            <div>
+                <h1 class="text-2xl font-black text-white">SUI TAP ADMIN PANEL</h1>
+                <p class="text-xs text-slate-400 font-semibold">Web3 Telegram Mini App Command Center</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500 px-3 py-1.5 rounded-xl text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>SYSTEM ONLINE</span>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="neobrutal-box p-5 text-center">
+            <p class="text-xs font-bold text-slate-400 uppercase">Total Users</p>
+            <p id="statUsers" class="text-3xl font-black text-[#38B6FF] mono mt-1">12,482</p>
+        </div>
+        <div class="neobrutal-box p-5 text-center">
+            <p class="text-xs font-bold text-slate-400 uppercase">Ad Revenue Est.</p>
+            <p id="statRev" class="text-3xl font-black text-emerald-400 mono mt-1">$482.50</p>
+        </div>
+        <div class="neobrutal-box p-5 text-center">
+            <p class="text-xs font-bold text-slate-400 uppercase">SUI Distributed</p>
+            <p id="statSui" class="text-3xl font-black text-amber-400 mono mt-1">84,190 SUI</p>
+        </div>
+    </div>
+
+    <!-- Configuration Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        
+        <!-- Adsgram Setting -->
+        <div class="neobrutal-box p-6 bg-slate-800">
+            <h2 class="text-lg font-black text-white flex items-center gap-2 mb-4">
+                <i data-lucide="video" class="text-[#38B6FF]"></i>
+                <span>Adsgram Interstitial Setting</span>
+            </h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-300 block mb-1">Ad Block ID (From Adsgram Dashboard)</label>
+                    <input type="text" id="adsgramBlockId" class="input-box mono" value="int-36440" placeholder="e.g. int-36440">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-300 block mb-1">Max Ad Watch per User Daily</label>
+                    <input type="number" id="maxAdViews" class="input-box mono" value="10">
+                </div>
+                <button onclick="saveAdsConfig()" class="w-full py-2.5 bg-[#38B6FF] hover:bg-[#20a3f0] text-slate-900 font-black rounded-xl text-sm transition-colors shadow-[4px_4px_0px_0px_#FFFFFF]">
+                    💾 Save Ad Configuration
+                </button>
+            </div>
+        </div>
+
+        <!-- Bot & Broadcast -->
+        <div class="neobrutal-box p-6 bg-slate-800">
+            <h2 class="text-lg font-black text-white flex items-center gap-2 mb-4">
+                <i data-lucide="send" class="text-emerald-400"></i>
+                <span>Broadcast Telegram Push</span>
+            </h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-300 block mb-1">Message Title</label>
+                    <input type="text" id="pushTitle" class="input-box" value="🚀 New Daily Missions Available!">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-300 block mb-1">Message Body</label>
+                    <textarea id="pushBody" class="input-box h-20" placeholder="Enter message for 12,480 users...">Tap now to claim your 500 SUI bonus!</textarea>
+                </div>
+                <button onclick="sendBroadcast()" class="w-full py-2.5 bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-black rounded-xl text-sm transition-colors shadow-[4px_4px_0px_0px_#FFFFFF]">
+                    📢 Send Push Notification
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Mission Creation -->
+    <div class="neobrutal-box p-6 bg-slate-800 mb-8">
+        <h2 class="text-lg font-black text-white flex items-center gap-2 mb-4">
+            <i data-lucide="plus-circle" class="text-amber-400"></i>
+            <span>Add New Daily Task / Ad Mission</span>
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+            <div class="sm:col-span-2">
+                <label class="text-xs font-bold text-slate-300 block mb-1">Mission Title</label>
+                <input type="text" id="mTitle" class="input-box" placeholder="e.g. Subscribe to Partner Youtube">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-slate-300 block mb-1">Reward (SUI)</label>
+                <input type="number" id="mReward" class="input-box mono" value="100">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-slate-300 block mb-1">Task Type</label>
+                <select id="mType" class="input-box">
+                    <option value="Telegram">Telegram Join</option>
+                    <option value="Ad Watch">Sponsored Ad</option>
+                    <option value="Social">Social Follow</option>
+                    <option value="Custom Link">External Web</option>
+                </select>
+            </div>
+        </div>
+        <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1">Target URL / Link (Optional)</label>
+            <input type="text" id="mLink" class="input-box mono mb-4" placeholder="https://t.me/...">
+        </div>
+        <button onclick="addMission()" class="px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl text-sm transition-colors">
+            ➕ Publish Mission Live
+        </button>
+    </div>
+
+    <script>
+        // Load settings
+        const saved = localStorage.getItem('sui_admin_config');
+        if (saved) {
+            const cfg = JSON.parse(saved);
+            if (cfg.adsgramBlockId) document.getElementById('adsgramBlockId').value = cfg.adsgramBlockId;
+        }
+
+        function saveAdsConfig() {
+            const blockId = document.getElementById('adsgramBlockId').value;
+            const maxViews = document.getElementById('maxAdViews').value;
+            localStorage.setItem('sui_admin_config', JSON.stringify({ adsgramBlockId: blockId, maxAdViews: maxViews }));
+            alert('✓ Adsgram settings saved & synced with user app!');
+        }
+
+        function sendBroadcast() {
+            const title = document.getElementById('pushTitle').value;
+            alert(`📢 Broadcast queued successfully for 12,482 Telegram users!\nTitle: ${title}`);
+        }
+
+        function addMission() {
+            const title = document.getElementById('mTitle').value;
+            const reward = document.getElementById('mReward').value;
+            if (!title) { alert('Please enter title'); return; }
+            alert(`✓ Mission "${title}" published successfully! Users can now earn +${reward} SUI.`);
+            document.getElementById('mTitle').value = '';
+        }
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>

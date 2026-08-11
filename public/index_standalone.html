@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sui Tap - Web3 Telegram Mini App</title>
+    <!-- Telegram WebApp Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #F8FAFC;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .neobrutal-box {
+            background: #FFFFFF;
+            border: 3px solid #000000;
+            box-shadow: 4px 4px 0px 0px #000000;
+            border-radius: 16px;
+        }
+        .neobrutal-btn {
+            background: #FFDE59;
+            border: 3px solid #000000;
+            box-shadow: 4px 4px 0px 0px #000000;
+            font-weight: 900;
+            transition: all 0.1s ease;
+        }
+        .neobrutal-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px 0px #000000;
+        }
+        @keyframes tapEffect {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.92); }
+            100% { transform: scale(1); }
+        }
+        .animate-tap { animation: tapEffect 0.15s ease-in-out; }
+        .floating-num {
+            position: absolute;
+            font-weight: 900;
+            color: #38B6FF;
+            text-shadow: 2px 2px 0px #000;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.4); }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24 flex flex-col items-center">
+
+    <!-- Top Header -->
+    <header class="w-full max-w-md p-4 flex items-center justify-between z-10">
+        <div class="flex items-center gap-2 bg-white border-2 border-black px-3 py-1.5 rounded-xl shadow-[3px_3px_0px_0px_#000]">
+            <div class="w-7 h-7 bg-[#38B6FF] rounded-full border-2 border-black flex items-center justify-center font-black text-white text-xs">S</div>
+            <span id="userName" class="font-black text-sm text-black">Telegram User</span>
+        </div>
+        <div class="flex items-center gap-2 bg-yellow-100 border-2 border-black px-3 py-1.5 rounded-xl shadow-[3px_3px_0px_0px_#000]">
+            <span class="text-xs font-extrabold text-yellow-900">⚡ Energy</span>
+            <span id="energyText" class="font-black text-xs mono">1000/1000</span>
+        </div>
+    </header>
+
+    <!-- Main Tap View -->
+    <main id="view-tap" class="w-full max-w-md flex-1 flex flex-col items-center justify-center p-4">
+        <!-- Balance Display -->
+        <div class="neobrutal-box w-full p-6 text-center mb-8 bg-[#E0F2FE]">
+            <p class="text-xs font-black uppercase tracking-wider text-gray-600">Your Sui Balance</p>
+            <div class="flex items-center justify-center gap-2 mt-1">
+                <span id="balanceText" class="text-4xl font-black mono text-black">0.0000</span>
+                <span class="text-xl font-black text-[#38B6FF] bg-white border-2 border-black px-2 py-0.5 rounded-lg">SUI</span>
+            </div>
+            <div class="mt-3 inline-flex items-center gap-1.5 bg-white border-2 border-black px-3 py-1 rounded-full text-xs font-bold text-gray-800">
+                <span>🏆 League:</span>
+                <span id="leagueText" class="text-amber-600 font-black">Bronze Tapper</span>
+            </div>
+        </div>
+
+        <!-- Tap Coin / Button -->
+        <div class="relative flex items-center justify-center my-6">
+            <div id="tapCoin" class="w-64 h-64 rounded-full bg-gradient-to-tr from-[#38B6FF] to-[#004ADE] border-4 border-black shadow-[8px_8px_0px_0px_#000] flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-transform relative overflow-hidden">
+                <div class="w-48 h-48 rounded-full border-4 border-white/30 flex items-center justify-center backdrop-blur-sm">
+                    <span class="text-8xl font-black text-white drop-shadow-[4px_4px_0px_rgba(0,0,0,1)]">SUI</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="w-full grid grid-cols-2 gap-4 mt-4">
+            <div class="neobrutal-box p-3.5 bg-yellow-50 text-center">
+                <p class="text-[11px] font-bold text-gray-500">Tap Power</p>
+                <p id="tapPowerText" class="text-lg font-black text-black mt-0.5">+1 SUI</p>
+            </div>
+            <div class="neobrutal-box p-3.5 bg-purple-50 text-center">
+                <p class="text-[11px] font-bold text-gray-500">Ad Bonus</p>
+                <button onclick="watchAdBonus()" class="mt-1 px-3 py-1 bg-[#38B6FF] text-white border-2 border-black rounded-lg text-xs font-black shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
+                    📺 Watch (+50)
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Missions View (Hidden by default) -->
+    <section id="view-missions" class="w-full max-w-md flex-1 p-4 hidden flex-col">
+        <div class="neobrutal-box p-4 bg-[#FFF9C4] mb-4">
+            <h2 class="text-xl font-black text-black flex items-center gap-2">🎯 Daily Missions & Ads</h2>
+            <p class="text-xs font-semibold text-gray-700 mt-1">Complete tasks or watch sponsored ads to earn massive SUI rewards.</p>
+        </div>
+        <div id="missionsList" class="flex flex-col gap-3">
+            <!-- Populated via JS -->
+        </div>
+    </section>
+
+    <!-- Wallet View (Hidden by default) -->
+    <section id="view-wallet" class="w-full max-w-md flex-1 p-4 hidden flex-col items-center">
+        <div class="neobrutal-box w-full p-6 text-center bg-emerald-50 mb-6">
+            <h2 class="text-xl font-black text-black">💼 Web3 Wallet</h2>
+            <p class="text-xs font-semibold text-gray-600 mt-1">Connect your Sui wallet (Suiet / Slingshot) to withdraw tokens.</p>
+            <button onclick="connectWallet()" id="walletBtn" class="neobrutal-btn w-full mt-4 py-3 text-black text-sm rounded-xl">
+                🔗 Connect Sui Wallet
+            </button>
+        </div>
+        <div class="neobrutal-box w-full p-4 bg-white text-left">
+            <h3 class="font-black text-sm text-black mb-2">💡 Withdrawal Rules:</h3>
+            <ul class="text-xs font-semibold text-gray-600 space-y-1.5 list-disc pl-4">
+                <li>Minimum withdrawal is 100 SUI tokens.</li>
+                <li>Ensure Telegram account verification is completed.</li>
+                <li>Gas fees are subsidized by adsgram sponsor revenue.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t-4 border-black p-3 flex justify-around items-center z-50">
+        <button onclick="switchTab('tap')" id="tab-tap" class="flex flex-col items-center gap-1 text-[#38B6FF] font-black">
+            <i data-lucide="zap" class="w-6 h-6"></i>
+            <span class="text-[10px]">TAP</span>
+        </button>
+        <button onclick="switchTab('missions')" id="tab-missions" class="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-black">
+            <i data-lucide="target" class="w-6 h-6"></i>
+            <span class="text-[10px]">MISSIONS</span>
+        </button>
+        <button onclick="switchTab('wallet')" id="tab-wallet" class="flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-black">
+            <i data-lucide="wallet" class="w-6 h-6"></i>
+            <span class="text-[10px]">WALLET</span>
+        </button>
+    </nav>
+
+    <script>
+        // Initialize Telegram WebApp
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
+
+        // App State
+        let state = {
+            balance: 12.50,
+            energy: 1000,
+            maxEnergy: 1000,
+            tapPower: 1,
+            adsgramBlockId: 'int-36440',
+            userName: tg?.initDataUnsafe?.user?.first_name || 'Sui Pioneer',
+            missions: [
+                { id: '1', title: 'Join Official Telegram Channel', desc: 'Stay updated with news & drops', reward: 50, type: 'Telegram', link: 'https://t.me/sui_official', completed: false, verifying: false, verifySecs: 0 },
+                { id: '2', title: 'Watch Sponsor Ad (Adsgram)', desc: 'Instant reward from advertisers', reward: 100, type: 'Ad Watch', isAd: true, completed: false, verifying: false, verifySecs: 0 },
+                { id: '3', title: 'Follow on Twitter / X', desc: 'Retweet pinned post', reward: 40, type: 'Social', link: 'https://twitter.com/SuiNetwork', completed: false, verifying: false, verifySecs: 0 }
+            ]
+        };
+
+        // Load State from LocalStorage
+        try {
+            const saved = localStorage.getItem('sui_tap_state');
+            if (saved) state = { ...state, ...JSON.parse(saved) };
+            const adminConfig = localStorage.getItem('sui_admin_config');
+            if (adminConfig) {
+                const parsed = JSON.parse(adminConfig);
+                if (parsed.adsgramBlockId) state.adsgramBlockId = parsed.adsgramBlockId;
+            }
+        } catch (e) { console.error(e); }
+
+        function saveState() {
+            localStorage.setItem('sui_tap_state', JSON.stringify(state));
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('userName').innerText = state.userName;
+            document.getElementById('balanceText').innerText = state.balance.toFixed(4);
+            document.getElementById('energyText').innerText = `${Math.floor(state.energy)}/${state.maxEnergy}`;
+            document.getElementById('tapPowerText').innerText = `+${state.tapPower} SUI`;
+
+            // League logic
+            const leagueEl = document.getElementById('leagueText');
+            if (state.balance > 500) leagueEl.innerText = '💎 Diamond Master';
+            else if (state.balance > 100) leagueEl.innerText = '🥇 Gold Hunter';
+            else leagueEl.innerText = '🥉 Bronze Tapper';
+        }
+
+        // Tab Switching
+        function switchTab(tabId) {
+            ['tap', 'missions', 'wallet'].forEach(t => {
+                const view = document.getElementById(`view-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabId) {
+                    view.classList.remove('hidden');
+                    view.classList.add('flex');
+                    btn.className = 'flex flex-col items-center gap-1 text-[#38B6FF] font-black scale-105';
+                } else {
+                    view.classList.add('hidden');
+                    view.classList.remove('flex');
+                    btn.className = 'flex flex-col items-center gap-1 text-gray-400 font-bold hover:text-black';
+                }
+            });
+            if (tabId === 'missions') renderMissions();
+            lucide.createIcons();
+        }
+
+        // Tapping Mechanic
+        const coin = document.getElementById('tapCoin');
+        coin.addEventListener('click', (e) => {
+            if (state.energy < state.tapPower) {
+                alert('⚡ Not enough energy! Wait a few seconds to recharge.');
+                return;
+            }
+
+            state.balance += state.tapPower;
+            state.energy -= state.tapPower;
+            saveState();
+
+            // Visual Tap Effect
+            coin.classList.add('animate-tap');
+            setTimeout(() => coin.classList.remove('animate-tap'), 150);
+
+            // Floating Number
+            const rect = coin.getBoundingClientRect();
+            const el = document.createElement('div');
+            el.className = 'floating-num text-2xl';
+            el.innerText = `+${state.tapPower}`;
+            el.style.left = `${e.clientX - rect.left - 10}px`;
+            el.style.top = `${e.clientY - rect.top - 20}px`;
+            coin.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        });
+
+        // Energy Regeneration
+        setInterval(() => {
+            if (state.energy < state.maxEnergy) {
+                state.energy = Math.min(state.maxEnergy, state.energy + 2);
+                updateUI();
+            }
+        }, 1000);
+
+        // Adsgram Integration
+        function watchAdBonus() {
+            if (window.Adsgram) {
+                const AdController = window.Adsgram.init({ blockId: state.adsgramBlockId });
+                AdController.show().then(() => {
+                    state.balance += 50;
+                    saveState();
+                    alert('🎉 Ad Completed! Received +50 SUI bonus.');
+                }).catch((err) => {
+                    alert('Ad blocked or skipped.');
+                });
+            } else {
+                state.balance += 50;
+                saveState();
+                alert('🎉 [Preview Mode] Ad simulated. Received +50 SUI.');
+            }
+        }
+
+        // Missions Rendering & Verification Logic
+        function renderMissions() {
+            const list = document.getElementById('missionsList');
+            list.innerHTML = '';
+
+            state.missions.forEach((m, idx) => {
+                const card = document.createElement('div');
+                card.className = 'neobrutal-box p-4 bg-white flex items-center justify-between gap-3';
+                
+                let btnHtml = '';
+                if (m.completed) {
+                    btnHtml = `<span class="px-3 py-1.5 bg-green-500 border-2 border-black rounded-xl font-black text-xs text-white">✓ Completed</span>`;
+                } else if (m.verifying) {
+                    btnHtml = `<button disabled class="px-3 py-1.5 bg-amber-100 border-2 border-black rounded-xl font-black text-xs text-amber-800 animate-pulse">⏳ Verifying (${m.verifySecs}s)...</button>`;
+                } else if (m.readyToClaim) {
+                    btnHtml = `<button onclick="claimMission('${m.id}')" class="neobrutal-btn px-4 py-1.5 text-xs text-black animate-bounce bg-[#FFDE59]">🎁 Claim +${m.reward}</button>`;
+                } else {
+                    btnHtml = `<button onclick="startMission('${m.id}')" class="px-4 py-1.5 bg-[#38B6FF] hover:bg-[#20a3f0] text-white border-2 border-black rounded-xl font-black text-xs shadow-[2px_2px_0px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
+                        ${m.isAd ? '📺 Watch Ad' : '🚀 Start Task'}
+                    </button>`;
+                }
+
+                card.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[10px] font-black px-1.5 py-0.5 bg-gray-200 rounded border border-black uppercase text-gray-800">${m.type}</span>
+                        <h4 class="font-black text-sm text-black mt-1 truncate">${m.title}</h4>
+                        <p class="text-xs font-semibold text-gray-500 truncate">${m.desc}</p>
+                        <p class="text-xs font-extrabold text-[#38B6FF] mt-1">+${m.reward} SUI</p>
+                    </div>
+                    <div>${btnHtml}</div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function startMission(id) {
+            const m = state.missions.find(x => x.id === id);
+            if (!m) return;
+
+            if (m.isAd) {
+                if (window.Adsgram) {
+                    const AdCtrl = window.Adsgram.init({ blockId: state.adsgramBlockId });
+                    AdCtrl.show().then(() => startCountdown(m)).catch(() => startCountdown(m));
+                } else {
+                    startCountdown(m);
+                }
+            } else if (m.link) {
+                window.open(m.link, '_blank');
+                startCountdown(m);
+            } else {
+                startCountdown(m);
+            }
+        }
+
+        function startCountdown(mission) {
+            mission.verifying = true;
+            mission.verifySecs = 5;
+            renderMissions();
+
+            const timer = setInterval(() => {
+                mission.verifySecs--;
+                if (mission.verifySecs <= 0) {
+                    clearInterval(timer);
+                    mission.verifying = false;
+                    mission.readyToClaim = true;
+                }
+                renderMissions();
+            }, 1000);
+        }
+
+        function claimMission(id) {
+            const m = state.missions.find(x => x.id === id);
+            if (!m || !m.readyToClaim) return;
+
+            m.readyToClaim = false;
+            m.completed = true;
+            state.balance += m.reward;
+            saveState();
+            renderMissions();
+            alert(`🎉 Reward Claimed! Added +${m.reward} SUI to your balance.`);
+        }
+
+        function connectWallet() {
+            const btn = document.getElementById('walletBtn');
+            btn.innerText = '⏳ Connecting...';
+            setTimeout(() => {
+                btn.className = 'neobrutal-box w-full mt-4 py-3 bg-green-400 border-2 border-black font-black text-black text-sm';
+                btn.innerText = '✓ Connected: 0x71C...89E2';
+                alert('✓ Wallet connected successfully!');
+            }, 1200);
+        }
+
+        // Init
+        updateUI();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
