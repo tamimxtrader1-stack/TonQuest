@@ -39,14 +39,17 @@ let H={}, C={};
 const tabs=[['dash','Dashboard'],['users','Users'],['missions','Missions'],['channels','Channels'],['finance','Finance'],['settings','Settings'],['bot','Bot'],['admins','Admins'],['logs','Logs']];
 const api=async(p,o={})=>{const r=await fetch(p,{...o,headers:{...H,...(o.headers||{}),'Content-Type':'application/json'}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||r.statusText);return d};
 function login(){H={'Content-Type':'application/json'};const k=key.value.trim(),t=tid.value.trim();if(k)H['X-Admin-Key']=k;if(t)H['X-Telegram-Id']=t;
-api('/api/admin/dashboard').then(()=>{sessionStorage.tq_ak=k;sessionStorage.tq_at=t;login.classList.add('hide');app.classList.remove('hide');buildNav();load();}).catch(e=>err.textContent=e.message)}
+api('/api/admin/config').then(()=>{sessionStorage.tq_ak=k;sessionStorage.tq_at=t;login.classList.add('hide');app.classList.remove('hide');buildNav();load();}).catch(e=>err.textContent=e.message)}
 function logout(){sessionStorage.clear();location.reload()}
 function buildNav(){nav.innerHTML=tabs.map(([id,l],i)=>`<button class="${i?'':'on'}" data-t="${id}" onclick="go('${id}')">${l}</button>`).join('')}
 function go(id){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===id));render(id)}
-async function load(){const [dash,users,missions,channels,tx,cfg,logs]=await Promise.all([
-api('/api/admin/dashboard'),api('/api/admin/users'),api('/api/admin/missions'),api('/api/admin/channels'),
-api('/api/admin/transactions'),api('/api/admin/config'),api('/api/telegram/webhook-logs')]);
-C={dash,users,missions,channels,tx,cfg,logs};render('dash')}
+async function load(){
+const safe=async(p)=>{try{return await api(p)}catch(e){console.warn(p,e.message);return null}};
+const [dash,users,missions,channels,tx,cfg,logs]=await Promise.all([
+safe('/api/admin/dashboard'),safe('/api/admin/users'),safe('/api/admin/missions'),safe('/api/admin/channels'),
+safe('/api/admin/transactions'),safe('/api/admin/config'),safe('/api/telegram/webhook-logs')]);
+C={dash:dash||{users:0,pendingApprovals:0,missions:0,blocked:0},users:users||{users:[],blockedUserIds:[]},missions:missions||{missions:[]},channels:channels||{channels:[]},tx:tx||{transactions:[]},cfg:cfg||{botConfig:{},settings:{},adminTelegramIds:[]},logs:logs||{logs:[]}};
+render('dash')}
 function render(id){
 if(id==='dash'){const d=C.dash||{};main.innerHTML=`<div class="card"><h2>Dashboard</h2>
 <p>Users: <b>${d.users||0}</b> · Pending: <b>${d.pendingApprovals||0}</b> · Missions: <b>${d.missions||0}</b> · Blocked: <b>${d.blocked||0}</b></p>
