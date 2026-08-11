@@ -1,1 +1,129 @@
-<PLACEHOLDER>
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TonQuest Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{font-family:system-ui,sans-serif;background:#0b1220;color:#e8eef8;margin:0}
+.card{background:#121a2b;border:1px solid #243049;border-radius:14px;padding:16px}
+.btn{font-weight:700;border-radius:10px;padding:8px 12px;border:0;cursor:pointer}
+.bp{background:#3b82f6;color:#fff}.bg{background:#10b981;color:#052}.br{background:#ef4444;color:#fff}.bs{background:#1b2740;color:#dbe7ff}
+.inp{width:100%;background:#0b1220;border:1px solid #2d3d5c;border-radius:8px;padding:8px;color:#fff;box-sizing:border-box}
+.nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.nav button{background:#1b2740;color:#9fb0c9;border:0;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer}
+.nav button.on{background:#3b82f6;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px;border-bottom:1px solid #1a2438;text-align:left}
+.hide{display:none!important} .mono{font-family:ui-monospace,monospace}
+</style></head><body>
+<div id="login" style="max-width:420px;margin:60px auto;padding:16px">
+<div class="card">
+<h1 style="margin:0 0 8px">TonQuest Admin</h1>
+<p style="color:#9fb0c9;font-size:14px">Web only. No admin inside Mini App / bot.</p>
+<label style="font-size:12px;color:#9fb0c9">Admin Secret</label>
+<input id="key" class="inp" type="password" placeholder="tonquest-admin-2026" style="margin:4px 0 12px"/>
+<label style="font-size:12px;color:#9fb0c9">Or Admin Telegram ID</label>
+<input id="tid" class="inp mono" placeholder="7786778093" style="margin:4px 0 12px"/>
+<button class="btn bp" style="width:100%" onclick="login()">Enter</button>
+<p id="err" style="color:#f87171"></p>
+</div></div>
+<div id="app" class="hide" style="max-width:1100px;margin:0 auto;padding:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<strong>TonQuest Admin</strong>
+<button class="btn bs" onclick="logout()">Logout</button>
+</div>
+<div class="nav" id="nav"></div>
+<div id="main"></div>
+</div>
+<script>
+let H={}, C={};
+const tabs=[['dash','Dashboard'],['users','Users'],['missions','Missions'],['channels','Channels'],['finance','Finance'],['settings','Settings'],['bot','Bot'],['admins','Admins'],['logs','Logs']];
+const api=async(p,o={})=>{const r=await fetch(p,{...o,headers:{...H,...(o.headers||{}),'Content-Type':'application/json'}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||r.statusText);return d};
+function login(){H={'Content-Type':'application/json'};const k=key.value.trim(),t=tid.value.trim();if(k)H['X-Admin-Key']=k;if(t)H['X-Telegram-Id']=t;
+api('/api/admin/dashboard').then(()=>{sessionStorage.tq_ak=k;sessionStorage.tq_at=t;login.classList.add('hide');app.classList.remove('hide');buildNav();load();}).catch(e=>err.textContent=e.message)}
+function logout(){sessionStorage.clear();location.reload()}
+function buildNav(){nav.innerHTML=tabs.map(([id,l],i)=>`<button class="${i?'':'on'}" data-t="${id}" onclick="go('${id}')">${l}</button>`).join('')}
+function go(id){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===id));render(id)}
+async function load(){const [dash,users,missions,channels,tx,cfg,logs]=await Promise.all([
+api('/api/admin/dashboard'),api('/api/admin/users'),api('/api/admin/missions'),api('/api/admin/channels'),
+api('/api/admin/transactions'),api('/api/admin/config'),api('/api/telegram/webhook-logs')]);
+C={dash,users,missions,channels,tx,cfg,logs};render('dash')}
+function render(id){
+if(id==='dash'){const d=C.dash||{};main.innerHTML=`<div class="card"><h2>Dashboard</h2>
+<p>Users: <b>${d.users||0}</b> · Pending: <b>${d.pendingApprovals||0}</b> · Missions: <b>${d.missions||0}</b> · Blocked: <b>${d.blocked||0}</b></p>
+<p style="color:#9fb0c9;font-size:13px">Mini App users have zero admin access. Control everything here.</p></div>`}
+if(id==='users'){const u=C.users?.users||[],b=new Set(C.users?.blockedUserIds||[]);
+main.innerHTML=`<div class="card"><h2>Users (${u.length})</h2><table><tr><th>User</th><th>Balance</th><th></th></tr>
+${u.map(x=>{const id=String(x.telegramId||x.id);const bl=b.has(id)||x.isBlocked;
+return `<tr><td><b>${x.telegramName||'-'}</b><div class="mono" style="font-size:11px;color:#9fb0c9">#${id}</div></td>
+<td class="mono" style="font-size:12px">$${x.balanceUsdt||0} · ${x.balanceTon||0} TON</td>
+<td><button class="btn ${bl?'bg':'br'}" onclick="block('${id}',${!bl})">${bl?'Unblock':'Block'}</button></td></tr>`}).join('')||'<tr><td colspan="3">No users yet</td></tr>'}</table></div>`}
+if(id==='missions'){const m=C.missions?.missions||[];
+main.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between"><h2>Missions</h2><button class="btn bg" onclick="saveMission()">+ Quick Add</button></div>
+<table><tr><th>Title</th><th>Reward</th><th></th></tr>
+${m.map(x=>`<tr><td>${x.title}<div style="font-size:11px;color:#9fb0c9">${x.type||''}</div></td><td class="mono">${x.rewardAmount} ${x.rewardCurrency}</td>
+<td><button class="btn br" onclick="delM('${x.id}')">Del</button></td></tr>`).join('')}</table>
+<div style="margin-top:12px;display:grid;gap:8px;grid-template-columns:1fr 1fr">
+<input id="mt" class="inp" placeholder="Title"/><input id="ma" class="inp" type="number" placeholder="Reward" value="100"/>
+<input id="mc" class="inp" placeholder="Currency" value="APP Token"/><input id="md" class="inp" type="number" placeholder="Cooldown h" value="24"/>
+</div></div>`}
+if(id==='channels'){const ch=C.channels?.channels||[];
+main.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between"><h2>Channels</h2><button class="btn bg" onclick="saveCh()">+ Add</button></div>
+<table><tr><th>Name</th><th>Link</th><th>Req</th><th></th></tr>
+${ch.map(x=>`<tr><td>${x.name}</td><td class="mono" style="font-size:11px">${x.link}</td><td>${x.isRequired?'Yes':'No'}</td>
+<td><button class="btn br" onclick="delC('${x.id}')">Del</button></td></tr>`).join('')}</table>
+<div style="margin-top:12px;display:grid;gap:8px;grid-template-columns:1fr 1fr">
+<input id="cn" class="inp" placeholder="Name"/><input id="cl" class="inp" placeholder="https://t.me/..."/></div></div>`}
+if(id==='finance'){const t=C.tx?.transactions||[];
+main.innerHTML=`<div class="card"><h2>Finance</h2><table><tr><th>ID</th><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th></th></tr>
+${t.slice(0,40).map(x=>`<tr><td class="mono" style="font-size:11px">${x.id}</td><td>#${x.telegramId||x.userId}</td><td>${x.type}</td>
+<td class="mono">${x.amount} ${x.currency}</td><td>${x.status}</td>
+<td>${x.status==='pending'?`<button class="btn bg" onclick="tx('${x.id}','approve')">OK</button> <button class="btn br" onclick="tx('${x.id}','reject')">X</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6">Empty</td></tr>'}</table></div>`}
+if(id==='settings'){const s=C.cfg?.settings||{};
+main.innerHTML=`<div class="card"><h2>Settings</h2>
+<div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">
+<label>App Name<input id="sa" class="inp" value="${s.appName||''}"/></label>
+<label>Token Symbol<input id="ss" class="inp" value="${s.tokenSymbol||''}"/></label>
+<label>Min USDT<input id="su" class="inp" type="number" value="${s.minWithdrawUsdt??5}"/></label>
+<label>Min TON<input id="st" class="inp" type="number" value="${s.minWithdrawTon??1}"/></label>
+<label>Deposit TON<input id="sd1" class="inp mono" value="${s.depositWalletAddressTon||''}"/></label>
+<label>Deposit USDT<input id="sd2" class="inp mono" value="${s.depositWalletAddressUsdt||''}"/></label>
+</div>
+<label style="display:flex;gap:8px;margin-top:8px;align-items:center"><input id="sm" type="checkbox" ${s.maintenanceMode?'checked':''}/> Maintenance mode</label>
+<button class="btn bp" style="margin-top:12px" onclick="saveSet()">Save Settings</button><span id="smg"></span></div>`}
+if(id==='bot'){const b=C.cfg?.botConfig||{};
+main.innerHTML=`<div class="card"><h2>Bot & Webhook</h2>
+<label>Bot Token<input id="bt" class="inp mono" value="${(b.botToken&&b.botToken!=='***')?b.botToken:''}"/></label>
+<label>Bot Username<input id="bu" class="inp mono" value="${b.botUsername||''}"/></label>
+<label>Mini App URL<input id="ba" class="inp mono" value="${b.miniAppUrl||location.origin}"/></label>
+<label>Welcome<textarea id="bw" class="inp" style="height:100px">${b.welcomeMessageTemplate||''}</textarea></label>
+<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn bp" onclick="saveBot()">Save</button>
+<button class="btn bg" onclick="setHook()">Set Webhook</button></div>
+<p id="bm"></p></div>`}
+if(id==='admins'){const ids=C.cfg?.adminTelegramIds||[],p=C.cfg?.primaryAdminTelegramId;
+main.innerHTML=`<div class="card"><h2>Admin Telegram IDs</h2>
+<p style="color:#9fb0c9;font-size:13px">Only these IDs can access this web panel (or Admin Secret). Mini App never gets admin.</p>
+${ids.map(i=>`<div style="display:flex;justify-content:space-between;padding:8px;border:1px solid #243049;border-radius:8px;margin:6px 0">
+<span class="mono">#${i}${i===p?' · PRIMARY':''}</span>
+${i===p?'':`<button class="btn br" onclick="rmA('${i}')">Remove</button>`}</div>`).join('')}
+<div style="display:flex;gap:8px;margin-top:8px"><input id="na" class="inp mono" placeholder="Telegram ID"/><button class="btn bg" onclick="addA()">Add</button></div></div>`}
+if(id==='logs'){const L=C.logs?.logs||[];
+main.innerHTML=`<div class="card"><h2>Logs</h2>
+${L.slice(0,30).map(l=>`<div style="border:1px solid #243049;border-radius:8px;padding:8px;margin:6px 0;font-size:13px">
+<div style="color:#9fb0c9;font-size:11px">${l.timestamp} · ${l.eventType} · ${l.status||''}</div>
+<b>${l.senderName||''}</b> <span class="mono">#${l.senderTelegramId||''}</span>
+<div style="color:#9fb0c9">${(l.messageText||'').slice(0,120)}</div></div>`).join('')||'No logs'}</div>`}
+}
+async function block(id,block){await api('/api/admin/users/block',{method:'POST',body:JSON.stringify({telegramId:id,block})});await load();go('users')}
+async function delM(id){if(!confirm('Delete?'))return;await api('/api/admin/missions/'+id,{method:'DELETE'});await load();go('missions')}
+async function saveMission(){await api('/api/admin/missions',{method:'POST',body:JSON.stringify({title:mt.value,rewardAmount:+ma.value,rewardCurrency:mc.value,cooldownHours:+md.value,type:'Custom',description:'',enabled:true,iconName:'Star',link:'',order:99,isRequired:false})});await load();go('missions')}
+async function delC(id){if(!confirm('Delete?'))return;await api('/api/admin/channels/'+id,{method:'DELETE'});await load();go('channels')}
+async function saveCh(){await api('/api/admin/channels',{method:'POST',body:JSON.stringify({name:cn.value,link:cl.value,type:'channel',isRequired:true,description:''})});await load();go('channels')}
+async function tx(id,a){await api('/api/admin/transactions/'+id+'/'+a,{method:'POST',body:'{}'});await load();go('finance')}
+async function saveSet(){await api('/api/admin/settings',{method:'POST',body:JSON.stringify({appName:sa.value,tokenSymbol:ss.value,minWithdrawUsdt:+su.value,minWithdrawTon:+st.value,depositWalletAddressTon:sd1.value,depositWalletAddressUsdt:sd2.value,maintenanceMode:sm.checked})});smg.textContent=' Saved';await load()}
+async function saveBot(){await api('/api/admin/bot-config',{method:'POST',body:JSON.stringify({botToken:bt.value,botUsername:bu.value,miniAppUrl:ba.value,welcomeMessageTemplate:bw.value})});bm.textContent='Saved';await load()}
+async function setHook(){try{const d=await api('/api/telegram/set-webhook',{method:'POST',body:JSON.stringify({botToken:bt.value,botUsername:bu.value,miniAppUrl:ba.value,welcomeMessageTemplate:bw.value,webhookUrl:location.origin+'/api/telegram/webhook'})});bm.textContent=d.success?'Webhook OK':'Fail: '+(d.message||'')}catch(e){bm.textContent=e.message}}
+async function addA(){await api('/api/admin/admins',{method:'POST',body:JSON.stringify({addTelegramId:na.value.trim()})});await load();go('admins')}
+async function rmA(id){await api('/api/admin/admins',{method:'POST',body:JSON.stringify({removeTelegramId:id})});await load();go('admins')}
+if(sessionStorage.tq_ak||sessionStorage.tq_at){key.value=sessionStorage.tq_ak||'';tid.value=sessionStorage.tq_at||'';login()}
+</script></body></html>
