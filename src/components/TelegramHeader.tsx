@@ -1,9 +1,9 @@
 import React from 'react';
-import { ShieldCheck, FileText, History, Sparkles } from 'lucide-react';
+import { FileText, History, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const TelegramHeader: React.FC = () => {
-  const { user, settings, setShowAdminPanel, setShowWhitepaper, setShowHistory } = useApp();
+  const { user, settings, setShowWhitepaper, setShowHistory } = useApp();
 
   return (
     <header className="sticky top-0 z-40 bg-[#38B6FF] px-4 pt-3 pb-2 border-b-2 border-black shadow-[0px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -60,16 +60,7 @@ export const TelegramHeader: React.FC = () => {
             <History className="w-4 h-4 text-purple-600" />
           </button>
 
-          {user.isAdmin && (
-            <button
-              onClick={() => setShowAdminPanel(true)}
-              title="Open Admin Panel"
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#FFDE59] hover:bg-[#ffd633] text-black font-black text-xs border-2 border-black rounded-xl shadow-[2px_2px_0px_0px_#000] animate-pulse active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
-            >
-              <ShieldCheck className="w-4 h-4 text-red-600 fill-yellow-100" />
-              <span>Admin</span>
-            </button>
-          )}
+          {/* Admin panel moved to standalone web: /admin — not shown inside Mini App */}
         </div>
       </div>
     </header>
