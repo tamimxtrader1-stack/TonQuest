@@ -23,7 +23,7 @@ table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px;bord
 <input id="key" class="inp" type="password" placeholder="tonquest-admin-2026" style="margin:4px 0 12px"/>
 <label style="font-size:12px;color:#9fb0c9">Or Admin Telegram ID</label>
 <input id="tid" class="inp mono" placeholder="7786778093" style="margin:4px 0 12px"/>
-<button class="btn bp" style="width:100%" onclick="login()">Enter</button>
+<button class="btn bp" style="width:100%" onclick="doLogin()">Enter</button>
 <p id="err" style="color:#f87171"></p>
 </div></div>
 <div id="app" class="hide" style="max-width:1100px;margin:0 auto;padding:16px">
@@ -38,10 +38,10 @@ table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px;bord
 let H={}, C={};
 const tabs=[['dash','Dashboard'],['users','Users'],['missions','Missions'],['channels','Channels'],['finance','Finance'],['settings','Settings'],['bot','Bot'],['admins','Admins'],['logs','Logs']];
 const api=async(p,o={})=>{const r=await fetch(p,{...o,headers:{...H,...(o.headers||{}),'Content-Type':'application/json'}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||r.statusText);return d};
-function login(){H={'Content-Type':'application/json'};const k=key.value.trim(),t=tid.value.trim();if(k)H['X-Admin-Key']=k;if(t)H['X-Telegram-Id']=t;
-api('/api/admin/config').then(()=>{sessionStorage.tq_ak=k;sessionStorage.tq_at=t;login.classList.add('hide');app.classList.remove('hide');buildNav();load();}).catch(e=>err.textContent=e.message)}
+function doLogin(){H={'Content-Type':'application/json'};const k=document.getElementById('key').value.trim(),t=document.getElementById('tid').value.trim();if(k)H['X-Admin-Key']=k;if(t)H['X-Telegram-Id']=t;
+api('/api/admin/config').then(()=>{sessionStorage.tq_ak=k;sessionStorage.tq_at=t;document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide');buildNav();load();}).catch(e=>document.getElementById('err').textContent=e.message)}
 function logout(){sessionStorage.clear();location.reload()}
-function buildNav(){nav.innerHTML=tabs.map(([id,l],i)=>`<button class="${i?'':'on'}" data-t="${id}" onclick="go('${id}')">${l}</button>`).join('')}
+function buildNav(){document.getElementById("nav").innerHTML=tabs.map(([id,l],i)=>`<button class="${i?'':'on'}" data-t="${id}" onclick="go('${id}')">${l}</button>`).join('')}
 function go(id){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===id));render(id)}
 async function load(){
 const safe=async(p)=>{try{return await api(p)}catch(e){console.warn(p,e.message);return null}};
@@ -51,17 +51,17 @@ safe('/api/admin/transactions'),safe('/api/admin/config'),safe('/api/telegram/we
 C={dash:dash||{users:0,pendingApprovals:0,missions:0,blocked:0},users:users||{users:[],blockedUserIds:[]},missions:missions||{missions:[]},channels:channels||{channels:[]},tx:tx||{transactions:[]},cfg:cfg||{botConfig:{},settings:{},adminTelegramIds:[]},logs:logs||{logs:[]}};
 render('dash')}
 function render(id){
-if(id==='dash'){const d=C.dash||{};main.innerHTML=`<div class="card"><h2>Dashboard</h2>
+if(id==='dash'){const d=C.dash||{};document.getElementById("main").innerHTML=`<div class="card"><h2>Dashboard</h2>
 <p>Users: <b>${d.users||0}</b> · Pending: <b>${d.pendingApprovals||0}</b> · Missions: <b>${d.missions||0}</b> · Blocked: <b>${d.blocked||0}</b></p>
 <p style="color:#9fb0c9;font-size:13px">Mini App users have zero admin access. Control everything here.</p></div>`}
 if(id==='users'){const u=C.users?.users||[],b=new Set(C.users?.blockedUserIds||[]);
-main.innerHTML=`<div class="card"><h2>Users (${u.length})</h2><table><tr><th>User</th><th>Balance</th><th></th></tr>
+document.getElementById("main").innerHTML=`<div class="card"><h2>Users (${u.length})</h2><table><tr><th>User</th><th>Balance</th><th></th></tr>
 ${u.map(x=>{const id=String(x.telegramId||x.id);const bl=b.has(id)||x.isBlocked;
 return `<tr><td><b>${x.telegramName||'-'}</b><div class="mono" style="font-size:11px;color:#9fb0c9">#${id}</div></td>
 <td class="mono" style="font-size:12px">$${x.balanceUsdt||0} · ${x.balanceTon||0} TON</td>
 <td><button class="btn ${bl?'bg':'br'}" onclick="block('${id}',${!bl})">${bl?'Unblock':'Block'}</button></td></tr>`}).join('')||'<tr><td colspan="3">No users yet</td></tr>'}</table></div>`}
 if(id==='missions'){const m=C.missions?.missions||[];
-main.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between"><h2>Missions</h2><button class="btn bg" onclick="saveMission()">+ Quick Add</button></div>
+document.getElementById("main").innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between"><h2>Missions</h2><button class="btn bg" onclick="saveMission()">+ Quick Add</button></div>
 <table><tr><th>Title</th><th>Reward</th><th></th></tr>
 ${m.map(x=>`<tr><td>${x.title}<div style="font-size:11px;color:#9fb0c9">${x.type||''}</div></td><td class="mono">${x.rewardAmount} ${x.rewardCurrency}</td>
 <td><button class="btn br" onclick="delM('${x.id}')">Del</button></td></tr>`).join('')}</table>
@@ -70,19 +70,19 @@ ${m.map(x=>`<tr><td>${x.title}<div style="font-size:11px;color:#9fb0c9">${x.type
 <input id="mc" class="inp" placeholder="Currency" value="APP Token"/><input id="md" class="inp" type="number" placeholder="Cooldown h" value="24"/>
 </div></div>`}
 if(id==='channels'){const ch=C.channels?.channels||[];
-main.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between"><h2>Channels</h2><button class="btn bg" onclick="saveCh()">+ Add</button></div>
+document.getElementById("main").innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between"><h2>Channels</h2><button class="btn bg" onclick="saveCh()">+ Add</button></div>
 <table><tr><th>Name</th><th>Link</th><th>Req</th><th></th></tr>
 ${ch.map(x=>`<tr><td>${x.name}</td><td class="mono" style="font-size:11px">${x.link}</td><td>${x.isRequired?'Yes':'No'}</td>
 <td><button class="btn br" onclick="delC('${x.id}')">Del</button></td></tr>`).join('')}</table>
 <div style="margin-top:12px;display:grid;gap:8px;grid-template-columns:1fr 1fr">
 <input id="cn" class="inp" placeholder="Name"/><input id="cl" class="inp" placeholder="https://t.me/..."/></div></div>`}
 if(id==='finance'){const t=C.tx?.transactions||[];
-main.innerHTML=`<div class="card"><h2>Finance</h2><table><tr><th>ID</th><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th></th></tr>
+document.getElementById("main").innerHTML=`<div class="card"><h2>Finance</h2><table><tr><th>ID</th><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th></th></tr>
 ${t.slice(0,40).map(x=>`<tr><td class="mono" style="font-size:11px">${x.id}</td><td>#${x.telegramId||x.userId}</td><td>${x.type}</td>
 <td class="mono">${x.amount} ${x.currency}</td><td>${x.status}</td>
 <td>${x.status==='pending'?`<button class="btn bg" onclick="tx('${x.id}','approve')">OK</button> <button class="btn br" onclick="tx('${x.id}','reject')">X</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6">Empty</td></tr>'}</table></div>`}
 if(id==='settings'){const s=C.cfg?.settings||{};
-main.innerHTML=`<div class="card"><h2>Settings</h2>
+document.getElementById("main").innerHTML=`<div class="card"><h2>Settings</h2>
 <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">
 <label>App Name<input id="sa" class="inp" value="${s.appName||''}"/></label>
 <label>Token Symbol<input id="ss" class="inp" value="${s.tokenSymbol||''}"/></label>
@@ -94,7 +94,7 @@ main.innerHTML=`<div class="card"><h2>Settings</h2>
 <label style="display:flex;gap:8px;margin-top:8px;align-items:center"><input id="sm" type="checkbox" ${s.maintenanceMode?'checked':''}/> Maintenance mode</label>
 <button class="btn bp" style="margin-top:12px" onclick="saveSet()">Save Settings</button><span id="smg"></span></div>`}
 if(id==='bot'){const b=C.cfg?.botConfig||{};
-main.innerHTML=`<div class="card"><h2>Bot & Webhook</h2>
+document.getElementById("main").innerHTML=`<div class="card"><h2>Bot & Webhook</h2>
 <label>Bot Token<input id="bt" class="inp mono" value="${(b.botToken&&b.botToken!=='***')?b.botToken:''}"/></label>
 <label>Bot Username<input id="bu" class="inp mono" value="${b.botUsername||''}"/></label>
 <label>Mini App URL<input id="ba" class="inp mono" value="${b.miniAppUrl||location.origin}"/></label>
@@ -104,14 +104,14 @@ main.innerHTML=`<div class="card"><h2>Bot & Webhook</h2>
 <button class="btn bg" onclick="setHook()">Set Webhook</button></div>
 <p id="bm"></p></div>`}
 if(id==='admins'){const ids=C.cfg?.adminTelegramIds||[],p=C.cfg?.primaryAdminTelegramId;
-main.innerHTML=`<div class="card"><h2>Admin Telegram IDs</h2>
+document.getElementById("main").innerHTML=`<div class="card"><h2>Admin Telegram IDs</h2>
 <p style="color:#9fb0c9;font-size:13px">Only these IDs can access this web panel (or Admin Secret). Mini App never gets admin.</p>
 ${ids.map(i=>`<div style="display:flex;justify-content:space-between;padding:8px;border:1px solid #243049;border-radius:8px;margin:6px 0">
 <span class="mono">#${i}${i===p?' · PRIMARY':''}</span>
 ${i===p?'':`<button class="btn br" onclick="rmA('${i}')">Remove</button>`}</div>`).join('')}
 <div style="display:flex;gap:8px;margin-top:8px"><input id="na" class="inp mono" placeholder="Telegram ID"/><button class="btn bg" onclick="addA()">Add</button></div></div>`}
 if(id==='logs'){const L=C.logs?.logs||[];
-main.innerHTML=`<div class="card"><h2>Logs</h2>
+document.getElementById("main").innerHTML=`<div class="card"><h2>Logs</h2>
 ${L.slice(0,30).map(l=>`<div style="border:1px solid #243049;border-radius:8px;padding:8px;margin:6px 0;font-size:13px">
 <div style="color:#9fb0c9;font-size:11px">${l.timestamp} · ${l.eventType} · ${l.status||''}</div>
 <b>${l.senderName||''}</b> <span class="mono">#${l.senderTelegramId||''}</span>
@@ -128,5 +128,5 @@ async function saveBot(){await api('/api/admin/bot-config',{method:'POST',body:J
 async function setHook(){try{const d=await api('/api/telegram/set-webhook',{method:'POST',body:JSON.stringify({botToken:bt.value,botUsername:bu.value,miniAppUrl:ba.value,welcomeMessageTemplate:bw.value,webhookUrl:location.origin+'/api/telegram/webhook'})});bm.textContent=d.success?'Webhook OK':'Fail: '+(d.message||'')}catch(e){bm.textContent=e.message}}
 async function addA(){await api('/api/admin/admins',{method:'POST',body:JSON.stringify({addTelegramId:na.value.trim()})});await load();go('admins')}
 async function rmA(id){await api('/api/admin/admins',{method:'POST',body:JSON.stringify({removeTelegramId:id})});await load();go('admins')}
-if(sessionStorage.tq_ak||sessionStorage.tq_at){key.value=sessionStorage.tq_ak||'';tid.value=sessionStorage.tq_at||'';login()}
+if(sessionStorage.tq_ak||sessionStorage.tq_at){document.getElementById('key').value=sessionStorage.tq_ak||'';document.getElementById('tid').value=sessionStorage.tq_at||'';doLogin()}
 </script></body></html>
